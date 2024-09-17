@@ -24,12 +24,19 @@ median_ventilator_days = df['duration of mechanical ventilation (days)'].median(
 current_date = datetime.now()
 one_month_ago = current_date - timedelta(days=30)
 
-# Convert intubation date back to datetime for filtering
+# Convert intubation date and date of VAE back to datetime for filtering
 df['date of intubation'] = pd.to_datetime(df['date of intubation'])
+df['date of VAE'] = pd.to_datetime(df['date of VAE'], errors='coerce')
 
 # Count the number of reintubations within 24 hours in the last month
 reintubations_last_month = df[(df['reintubation within 24 hours of extubation (0 = no)'] == 1) & 
                               (df['date of intubation'] >= one_month_ago)].shape[0]
+
+# Convert Period objects to strings before grouping
+df['VAE_month_year'] = df['date of VAE'].dt.to_period('M').astype(str)
+
+# Group by year-month and count the occurrences of VAE
+vae_by_month = df[df['VAE (0 = no, 1 = yes)'] == 1].groupby('VAE_month_year').size().reset_index(name='count')
 
 # Initialize the Dash app
 app = Dash(__name__)
@@ -74,6 +81,10 @@ app.layout = html.Div([
 
     ], style={'display': 'flex', 'justify-content': 'center', 'padding': '20px'}),  # Flexbox for side-by-side layout
 
+    # VAE Frequency by Month Graph
+    html.H2('VAE Frequency by Month'),
+    dcc.Graph(id='vae-by-month-graph'),
+
     # Dropdown for data selection
     html.Label('Select a Column to Visualize'),
     dcc.Dropdown(
@@ -94,6 +105,31 @@ app.layout = html.Div([
     html.H2('Histogram'),
     dcc.Graph(id='histogram'),
 ])
+
+# Define callback to update the VAE graph and other elements
+@app.callback(
+    [Output('vae-by-month-graph', 'figure'),
+     Output('data-table', 'children'),
+     Output('chart', 'figure'),
+     Output('histogram', 'figure')],
+    [Input('dropdown', 'value')]
+)
+def update_dashboard(selected_column):
+    # Generate VAE by Month Graph
+    vae_fig = px.bar(vae_by_month, x='VAE_month_year', y='count', title='Frequency of VAE by Month', labels={'VAE_month_year': 'Month', 'count': 'VAE Count'})
+
+    # Generate Data Table
+    table_header = [html.Tr([html.Th(col) for col in df.columns])]
+    table_body = [html.Tr([html.Td(df.iloc[i][col]) for col in df.columns]) for i in range(min(len(df), 10))]  # Display first 10 rows
+    table = html.Table(table_header + table_body)
+
+    # Create a Chart (e.g., scatter plot)
+    chart = px.scatter(df, x='MRN', y=selected_column, title=f'Scatter Plot: MRN vs {selected_column}')
+
+    # Create a Histogram
+    histogram = px.histogram(df, x=selected_column, title=f'Histogram of {selected_column}')
+
+    return vae_fig, table, chart, histogram
 
 # Run the app
 if __name__ == '__main__':

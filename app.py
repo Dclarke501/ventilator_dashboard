@@ -4,9 +4,20 @@ from dash import Dash, dcc, html
 from dash.dependencies import Input, Output
 import plotly.express as px
 from datetime import datetime, timedelta
+import os
 
-# Load your CSV data
-df = pd.read_csv('/Users/davidclarke/Desktop/programming_projects/Ventilator_dashboard/data/ventilation_dashboard_recreated_dummy_data.csv')
+# Load csv data
+csv_path = os.getenv('DATA_PATH')
+if csv_path:
+    df = pd.read_csv(csv_path)
+else:
+    print("Error: DATA_PATH environment variable not set")
+
+''' Load your CSV data - can also do it this way if you want to load the data from a CSV file
+df = pd.read_csv('folder/data.csv')
+'''
+
+
 
 # Calculate VAE rate per 1000 ventilator days
 total_vae_cases = df['VAE (0 = no, 1 = yes)'].sum()

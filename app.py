@@ -6,6 +6,11 @@ import plotly.express as px
 from datetime import datetime, timedelta
 import os
 
+''' set the DATA_PATH environment variable to the path of your CSV file before running the app
+    e.g., in the terminal, run:
+    export DATA_PATH='path/to/your/data.csv'
+    '''
+
 # Load csv data
 csv_path = os.getenv('DATA_PATH')
 if csv_path:

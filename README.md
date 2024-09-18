@@ -17,7 +17,6 @@ source venv/bin/activate
 
 # On Windows:
 
-Copy code
 python -m venv venv
 venv\Scripts\activate
 
